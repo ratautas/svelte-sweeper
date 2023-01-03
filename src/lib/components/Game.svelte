@@ -2,7 +2,7 @@
   const SIZE = 8;
   const DIFFICULTY = 10;
 
-  // Populate field with random mine locations:
+  // Populate board with random mine locations:
   let rows = new Array(SIZE)
     .fill(new Array(SIZE).fill(null))
       .map(row => row.map(col => ({
@@ -10,14 +10,14 @@
       })
     ));
 
-  const handleRightClick = (x, y) => setTileProp(x, y, 'isMarked', !rows[x][y].isMarked);
+  const handleRightClick = (x, y) => rows[x][y].isMarked = !rows[x][y].isMarked;
 
   const reveal = (x,y) => {
     const tile = rows[x][y];
     if (tile.isMine) return alert('mine!');
     if (tile.isChecked) return;
-    
-    setTileProp(x, y, 'isChecked', true);
+
+    rows[x][y].isChecked = true;
 
     if (tile.adjacentMines !== 0) return;
 
@@ -29,14 +29,7 @@
     });
   }
 
-  const setTileProp = (x, y, prop, val) => {
-    rows[x][y] = {
-      ...rows[x][y], // get rid of references
-      [prop]: val,
-    };
-  };
-
-  const getAdjacentMines =(x, y) => getAdjacentTiles(x, y).filter(([key, val]) => val?.isMine).length;
+  const getAdjacentMines =(x, y) => getAdjacentTiles(x, y).filter(([key, val]) => val.isMine).length;
 
   function getAdjacentTiles(x,y) {
     return [
@@ -53,7 +46,7 @@
 
   rows = rows.map((row, x) => row.map((col, y) => ({
     ...col,
-    adjacentMines: getAdjacentTiles(x, y).filter(([key, val]) => val?.isMine).length
+    adjacentMines: getAdjacentTiles(x, y).filter(([key, val]) => val.isMine).length
   })));
 
 </script>
