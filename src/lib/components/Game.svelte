@@ -1,60 +1,60 @@
 <script>
-  const SIZE = 8; 
+  const SIZE = 8;
   const DIFFICULTY = 10;
 
-  const getSurrounding = (x,y) => [
-    [`${x}:${y-1}`, rows[x]?.[y-1]],
-    [`${x}:${y+1}`, rows[x]?.[y+1]],
-    [`${x-1}:${y}`, rows[x-1]?.[y]],
-    [`${x+1}:${y}`, rows[x+1]?.[y]],
-    [`${x-1}:${y-1}`, rows[x-1]?.[y-1]],
-    [`${x-1}:${y+1}`, rows[x-1]?.[y+1]],
-    [`${x+1}:${y-1}`, rows[x+1]?.[y-1]],
-    [`${x+1}:${y+1}`, rows[x+1]?.[y+1]]
-  ].filter(([key, val]) => typeof val !== 'undefined');
-
-  const checkForDanger = (x, y, tile) => {
-    if (tile?.isChecked) return; // escape
-    if (tile?.isMine) return; // EXPLODE!
-
-    setTileProp(x, y, 'isChecked', true);
-
-    if (countDanger(x,y)) return; // If is dangerous, just uncover it
-
-    getSurrounding(x, y).forEach(([key, val])=> {
-      if (val?.isMine) return;
-      
-      const [x, y] = key.split(':');
-      checkForDanger(x, y, val);
-    })
-  };
-
-  const countDanger = (x,y) => getSurrounding(x,y).filter(([key,val])=>val?.isMine).length;
-
-  const onRightClick = (x, y) => {
-    setTileProp(x, y,'isMarked', !rows[x][y].isMarked);
-  };
-
-  const setTileProp = (x,y,prop,val) => {
-    const r = [...rows];
-    r[x] = [...r[x]];
-    r[x][y] = {
-      ...r[x][y],
-      [prop]: val,
-    };
-    rows = r;
-  };
-
+  // Populate field with random mine locations:
   let rows = new Array(SIZE)
     .fill(new Array(SIZE).fill(null))
       .map(row => row.map(col => ({
-        isChecked: false,
-        isRevealed: false,
-        isMarked: false,
-        isEmpty: false,
-        isMine: Math.random() < DIFFICULTY /100,
+        isMine: Math.random() < DIFFICULTY / 100,
       })
     ));
+
+  const handleRightClick = (x, y) => setTileProp(x, y, 'isMarked', !rows[x][y].isMarked);
+
+  const reveal = (x,y) => {
+    const tile = rows[x][y];
+    if (tile.isMine) return alert('mine!');
+    if (tile.isChecked) return;
+    
+    setTileProp(x, y, 'isChecked', true);
+
+    if (tile.adjacentMines !== 0) return;
+
+    getAdjacentTiles(x, y).forEach(([key, val]) => {
+      const [x, y] = key.split(':').map(Number);
+      const tile = rows[x][y];
+      if (tile.isMine) return;
+      reveal(x,y);
+    });
+  }
+
+  const setTileProp = (x, y, prop, val) => {
+    rows[x][y] = {
+      ...rows[x][y], // get rid of references
+      [prop]: val,
+    };
+  };
+
+  const getAdjacentMines =(x, y) => getAdjacentTiles(x, y).filter(([key, val]) => val?.isMine).length;
+
+  function getAdjacentTiles(x,y) {
+    return [
+      [`${x}:${y-1}`, rows[x]?.[y-1]],
+      [`${x}:${y+1}`, rows[x]?.[y+1]],
+      [`${x-1}:${y}`, rows[x-1]?.[y]],
+      [`${x+1}:${y}`, rows[x+1]?.[y]],
+      [`${x-1}:${y-1}`, rows[x-1]?.[y-1]],
+      [`${x-1}:${y+1}`, rows[x-1]?.[y+1]],
+      [`${x+1}:${y-1}`, rows[x+1]?.[y-1]],
+      [`${x+1}:${y+1}`, rows[x+1]?.[y+1]]
+    ].filter(([key, val]) => !!val);
+  };
+
+  rows = rows.map((row, x) => row.map((col, y) => ({
+    ...col,
+    adjacentMines: getAdjacentTiles(x, y).filter(([key, val]) => val?.isMine).length
+  })));
 
 </script>
 
@@ -66,13 +66,13 @@
 	      class:checked="{tile?.isChecked}"
 	      class:mine="{tile?.isMine}"
 	      class:marked="{tile?.isMarked}"
-	      class:empty="{tile?.isEmpty}"
-	      class:revealed="{tile?.isRevealed}"
-        on:contextmenu|preventDefault={e=>onRightClick(x,y)}
-        on:click={e=>checkForDanger(x, y, tile)}
+        on:contextmenu|preventDefault={e=>handleRightClick(x,y)}
+        on:click={e=>reveal(x,y)}
       >
-      {#if tile.isChecked}
-        {countDanger(x,y)}
+      {#if tile.isMarked}
+        🏴󠁧󠁢󠁳󠁣󠁴󠁿
+      {:else if tile.isChecked && tile.adjacentMines > 0}
+        {tile.adjacentMines}
       {/if}
       </button>
     {/each}
@@ -90,21 +90,9 @@
   width: 48px;
   text-align: center;
   aspect-ratio: 1 / 1;
-  background-color: red;
-}
-.tile.mine {
-  /* background-color: green; */
+  background-color: grey;
 }
 .tile.checked {
-  background-color: blue;
-}
-.tile.empty {
-  background-color: purple;
-}
-.tile.revealed {
-  background-color: pink;
-}
-.tile.marked {
-  background-color: black;
+  background-color: #fff;
 }
 </style>
